@@ -105,9 +105,17 @@
             <div class="content-card">
               <div class="page-title">
                   <span>ค้นหาประวัติการจอดรถย้อนหลัง (รถที่ออกไปแล้ว)</span>
-                  <div class="d-inline-flex gap-2"><input type="month" id="archiveMonth" class="form-control form-control-sm"><button onclick="loadArchive()" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> ค้นหา</button></div>
+                  <div class="d-inline-flex gap-2">
+                    <input type="month" id="archiveMonth" class="form-control form-control-sm">
+                    <button onclick="loadArchive()" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> ค้นหา</button>
+                  </div>
               </div>
-              <div class="table-responsive"><table id="archiveTable" class="table table-hover w-100 align-middle"><thead class="table-light"><tr><th>ทะเบียนรถ</th><th>ห้อง</th><th>ประเภท</th><th>เวลาเข้า</th><th>เวลาออก</th><th class="text-end pe-4">ค่าจอด (฿)</th></tr></thead><tbody id="archiveBody"></tbody></table></div>
+              <div class="table-responsive">
+                <table id="archiveTable" class="table table-hover w-100 align-middle">
+                  <thead class="table-light"><tr><th>ทะเบียนรถ</th><th>ห้อง</th><th>ประเภท</th><th>เวลาเข้า</th><th>เวลาออก</th><th class="text-end pe-4">ค่าจอด (฿)</th></tr></thead>
+                  <tbody id="archiveBody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -150,8 +158,8 @@
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
-      // 🔴 นำลิงก์ Web App (Deployment URL) จาก Apps Script มาใส่ตรงนี้
-      const API_URL = "https://script.google.com/macros/s/AKfycbx6HbALFtgBZAtrJTApsso7_BR2tB_COcG1K0IneAXo9IFzuLWtSpLmvjS6y0TLH-y3nA/exec"; 
+      // 🔴 URL API ของ Google Apps Script 
+      const API_URL = "https://script.google.com/macros/s/AKfycbyrV1l6Ep_Z5zpS3Tsp4M-HyTMaIh62YqUpjGQC9-IVJQtZNBAz84p9meN1NwzteEpJyg/exec"; 
 
       let CURRENT_ROLE = null; let CURRENT_USER_NAME = ""; let CURRENT_LOGIN_ID = ""; let isEditMode = false; let refreshInterval;
       
@@ -161,26 +169,37 @@
         $('#archiveMonth').val(today.getFullYear() + "-" + mm);
       });
       
-      // 🚀 ฟังก์ชันหลักสำหรับสื่อสารกับ API
+      // 🚀 ฟังก์ชัน Request ส่งข้อมูลข้าม Domain (รองรับ Error HTML)
       function gasRequest(action, payload, onSuccess) {
           fetch(API_URL, {
               method: "POST",
               headers: { "Content-Type": "text/plain;charset=utf-8" },
               body: JSON.stringify({ action: action, payload: payload })
           })
-          .then(res => res.json())
+          .then(async (res) => {
+              const contentType = res.headers.get("content-type");
+              if (contentType && contentType.includes("text/html")) {
+                  const errorHtml = await res.text();
+                  console.error("HTML Error Response:", errorHtml);
+                  Swal.fire('Google Script Error', 'สคริปต์หลังบ้านขัดข้อง กรุณาเช็ค Console', 'error');
+                  throw new Error("Received HTML instead of JSON");
+              }
+              return res.json();
+          })
           .then(res => {
               if (res.status === "success") { if(onSuccess) onSuccess(res.data); } 
               else { Swal.fire('Error API', res.message, 'error'); }
           })
           .catch(err => {
-              console.error(err); Swal.fire('Network Error', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+              console.error("Fetch Error:", err); 
+              if(err.message !== "Received HTML instead of JSON") {
+                  Swal.fire('Network Error', 'เกิดข้อผิดพลาดในการรับส่งข้อมูล: ' + err.message, 'error');
+              }
           });
       }
 
       function goToHome() { window.top.location.href = "https://chaichana-dev-io.github.io/charoenkrung-condo3-admin/"; }
       
-      // ✅ แปลงโค้ดทั้งหมดให้ใช้ gasRequest แทน google.script.run
       function doLogin() { 
         var user = $('#loginUser').val(); var pass = $('#loginPass').val(); 
         var btn = $('#btnLogin'); btn.html('Checking...'); btn.prop('disabled', true); 
@@ -275,25 +294,48 @@
           });
       }
       
+      // 🟢 ฟังก์ชันโหลดประวัติย้อนหลังที่แก้ไขบั๊ก DataTables 100% เรียบร้อยแล้ว
       function loadArchive() {
           let monthVal = $('#archiveMonth').val(); 
+          
+          // ล้างตารางเก่าทิ้งก่อนแสดงสถานะโหลด
+          if ($.fn.DataTable.isDataTable('#archiveTable')) {
+              $('#archiveTable').DataTable().destroy();
+          }
+          
           $('#archiveBody').html('<tr><td colspan="6" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm me-2"></div> กำลังโหลดข้อมูล...</td></tr>');
           
           gasRequest('getArchiveData', { monthValue: monthVal }, function(data) {
               let html = ''; let totalFee = 0;
+              
               data.forEach(r => {
                   let fee = parseFloat(r.fee) || 0; totalFee += fee;
                   let typeBadge = '';
                   if (r.type === 'รายเดือน') typeBadge = '<span class="badge bg-info bg-opacity-10 text-info border border-info">รายเดือน</span>'; 
                   else if (r.type === 'VIP') typeBadge = '<span class="badge bg-warning text-dark border border-warning">VIP</span>'; 
                   else typeBadge = '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">' + r.type + '</span>';
+                  
                   html += `<tr><td class="fw-bold text-dark">${r.plate}</td><td>${r.room}</td><td>${typeBadge}</td><td>${r.entry}</td><td>${r.exit}</td><td class="text-end pe-4 fw-bold">${fee > 0 ? fee.toLocaleString() : '-'}</td></tr>`;
               });
-              if(data.length === 0) { html = '<tr><td colspan="6" class="text-center text-muted py-4">ไม่พบประวัติการจอดรถในเดือนที่เลือก</td></tr>'; }
-              $('#arc-count-cars').text(data.length.toLocaleString() + " คัน"); $('#arc-total-income').text(totalFee.toLocaleString() + " ฿");
-              if ($.fn.DataTable.isDataTable('#archiveTable')) $('#archiveTable').DataTable().destroy();
+              
+              // อัปเดตตัวเลขสรุป
+              $('#arc-count-cars').text(data.length.toLocaleString() + " คัน"); 
+              $('#arc-total-income').text(totalFee.toLocaleString() + " ฿");
+              
+              // เคลียร์คำว่ากำลังโหลดออก แล้วใส่ข้อมูลใหม่
+              $('#archiveBody').empty();
               $('#archiveBody').html(html);
-              $('#archiveTable').DataTable({ "order": [], "language": { "search": "ค้นหา:", "paginate": { "next": ">", "previous": "<" }, "info": "แสดง _START_ ถึง _END_" } });
+              
+              // สร้างตาราง DataTables ใหม่ และตั้งค่าข้อความตอนไม่มีข้อมูล
+              $('#archiveTable').DataTable({ 
+                  "order": [], 
+                  "language": { 
+                      "search": "ค้นหา:", 
+                      "paginate": { "next": ">", "previous": "<" }, 
+                      "info": "แสดง _START_ ถึง _END_",
+                      "emptyTable": "ไม่พบประวัติการจอดรถในเดือนที่เลือก"
+                  } 
+              });
           });
       }
 
