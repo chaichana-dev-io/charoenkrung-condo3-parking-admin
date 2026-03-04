@@ -10,63 +10,27 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --primary-color: #2c3e50; 
-            --secondary-color: #34495e; 
-            --accent-color: #3498db; 
-            --bg-color: #f8f9fa; 
-            --text-color: #333; 
-        }
-
-        body { 
-            font-family: 'Sarabun', sans-serif; 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            font-size: 14px; 
-            padding-top: 80px; 
-        }
+        :root { --primary-color: #2c3e50; --secondary-color: #34495e; --accent-color: #3498db; --bg-color: #f8f9fa; --text-color: #333; }
+        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg-color); color: var(--text-color); font-size: 14px; padding-top: 80px; }
 
         /* 🔒 Login Overlay */
-        #loginOverlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: radial-gradient(circle at center, #34495e 0%, #2c3e50 100%);
-            z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; 
-        }
-        .login-box { 
-            background: white; padding: 40px; border-radius: 20px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 400px; 
-            border-top: 6px solid var(--accent-color);
-        }
+        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #34495e 0%, #2c3e50 100%); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 400px; border-top: 6px solid var(--accent-color); }
         .login-logo { width: 180px; height: auto; margin-bottom: 20px; }
 
-        /* 🏢 Navbar */
-        .navbar { 
-            background-color: #ffffff !important; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-            padding: 10px 0; 
-        }
+        /* 🏢 Navbar & Layout */
+        .navbar { background-color: #ffffff !important; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 10px 0; }
         .navbar-brand img { height: 45px; width: auto; }
-        
-        /* 📦 Full Width Wrapper */
         .main-wrapper { width: 97%; margin: 0 auto; }
 
-        .content-card { 
-            background: white; border-radius: 15px; padding: 25px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 25px; border: 1px solid #eee;
-        }
-        
-        .page-title { 
-            font-size: 1.2rem; font-weight: 600; color: var(--secondary-color); 
-            margin-bottom: 20px; border-bottom: 1px solid #f0f2f5; 
-            padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; 
-        }
+        /* 📦 Content Cards */
+        .content-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 25px; border: 1px solid #eee; }
+        .page-title { font-size: 1.2rem; font-weight: 600; color: var(--secondary-color); margin-bottom: 20px; border-bottom: 1px solid #f0f2f5; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; border-left: 5px solid var(--primary-color); box-shadow: 0 2px 6px rgba(0,0,0,0.02); height: 100%; }
 
-        /* 📊 Stat Cards */
-        .stat-card { 
-            background: white; border-radius: 12px; padding: 20px; 
-            border-left: 5px solid var(--primary-color);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02); height: 100%;
-        }
+        /* 📋 Navigation Tabs */
+        .nav-tabs .nav-link { color: #666; font-weight: 500; border: none; padding: 12px 25px; }
+        .nav-tabs .nav-link.active { color: var(--primary-color) !important; border-bottom: 3px solid var(--primary-color) !important; background: transparent; }
 
         .super-admin-section { display: none !important; }
         .badge-status { cursor: pointer; transition: 0.2s; padding: 6px 12px; }
@@ -75,16 +39,9 @@
         .table { width: 100% !important; margin-bottom: 0; }
         .table thead th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; white-space: nowrap; }
         .table td { vertical-align: middle; }
-
-        .nav-tabs .nav-link { color: #666; font-weight: 500; border: none; padding: 12px 25px; }
-        .nav-tabs .nav-link.active { 
-            color: var(--primary-color) !important; 
-            border-bottom: 3px solid var(--primary-color) !important; 
-            background: transparent;
-        }
     </style>
 </head>
-<body>
+<body id="mainBody">
 
     <div id="loginOverlay">
         <div class="login-box text-center">
@@ -122,8 +79,8 @@
         <div class="container-fluid main-wrapper">
             <ul class="nav nav-tabs no-print mb-4" id="myTab" role="tablist">
                 <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard" onclick="loadDashboard()">แดชบอร์ด</button></li>
-                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#members" onclick="loadMembers()">สมาชิกรายเดือน</button></li>
-                <li class="nav-item" id="tab-queue-li"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#queue" onclick="loadQueue()">คิวรออนุมัติ <span class="badge bg-danger ms-1" id="queueCount">0</span></button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#members" onclick="loadMembers()">ทะเบียนสมาชิก</button></li>
+                <li class="nav-item" id="tab-queue-li"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#queue" onclick="loadQueue()">รออนุมัติ <span class="badge bg-danger ms-1" id="queueCount">0</span></button></li>
                 <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#archiveTab" onclick="initArchiveTab()">ประวัติย้อนหลัง</button></li>
                 <li class="nav-item super-admin-section" id="tab-users"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#users" onclick="loadUsers()">จัดการผู้ใช้</button></li>
             </ul>
@@ -131,37 +88,55 @@
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="dashboard">
                     <div class="row g-4 mb-4">
-                        <div class="col-md-4"><div class="stat-card" style="border-left-color: #2980b9;"><small class="text-muted">รถเข้าวันนี้</small><h4 id="stat-total-cars">-</h4></div></div>
-                        <div class="col-md-4"><div class="stat-card" style="border-left-color: #e74c3c;"><small class="text-muted">จอดอยู่ปัจจุบัน</small><h4 id="stat-current-parked">-</h4></div></div>
-                        <div class="col-md-4"><div class="stat-card" style="border-left-color: #27ae60;"><small class="text-muted">รายได้รวมวันนี้</small><h4 id="stat-total-income">-</h4></div></div>
+                        <div class="col-md-4"><div class="stat-card" style="border-left-color: #2980b9;"><small class="text-muted text-uppercase">รถเข้าวันนี้</small><h2 id="stat-total-cars">-</h2></div></div>
+                        <div class="col-md-4"><div class="stat-card" style="border-left-color: #e74c3c;"><small class="text-muted">จอดอยู่ในพื้นที่</small><h2 id="stat-current-parked">-</h2></div></div>
+                        <div class="col-md-4"><div class="stat-card" style="border-left-color: #27ae60;"><small class="text-muted">รายได้เงินสดวันนี้</small><h2 class="text-success" id="stat-total-income">-</h2></div></div>
                     </div>
                     <div class="content-card">
                         <div class="page-title">
                             <span>รายการรถเข้า-ออก</span>
                             <div class="d-flex gap-2">
-                                <input type="date" id="filterDate" class="form-control form-control-sm w-auto">
-                                <button onclick="loadDashboard()" class="btn btn-primary btn-sm px-3 shadow-sm"><i class="bi bi-search"></i></button>
+                                <input type="date" id="filterDate" class="form-control form-control-sm w-auto" onchange="loadDashboard()">
                                 <button onclick="resetFilter()" class="btn btn-light border btn-sm shadow-sm"><i class="bi bi-arrow-counterclockwise"></i></button>
-                                <div class="super-admin-section ms-2 d-inline-block" id="backupTools">
-                                    <button onclick="doManualBackup()" class="btn btn-warning btn-sm shadow-sm" title="สำรองข้อมูล"><i class="bi bi-cloud-arrow-up"></i></button>
-                                    <button onclick="doManualArchive()" class="btn btn-secondary btn-sm shadow-sm" title="ย้ายข้อมูลเก่า"><i class="bi bi-archive"></i></button>
+                                <div class="super-admin-section d-inline-flex gap-1 ms-2" id="backupTools">
+                                    <button onclick="doManualBackup()" class="btn btn-warning btn-sm shadow-sm" title="Backup"><i class="bi bi-cloud-arrow-up"></i></button>
+                                    <button onclick="doManualArchive()" class="btn btn-secondary btn-sm shadow-sm" title="Archive"><i class="bi bi-archive"></i></button>
                                 </div>
                             </div>
                         </div>
                         <div class="table-responsive">
                             <table id="recordTable" class="table table-hover w-100">
-                                <thead><tr><th>ทะเบียน</th><th>ห้อง</th><th>บริการ</th><th>เวลาเข้า</th><th>เวลาออก</th><th>ค่าจอด</th><th class="text-center no-print action-col">ดำเนินการ</th></tr></thead>
+                                <thead><tr><th>ทะเบียน</th><th>ห้อง</th><th>บริการ</th><th>เวลาเข้า</th><th>เวลาออก</th><th>ค่าจอด</th><th class="text-center action-col">จัดการ</th></tr></thead>
                                 <tbody id="recordBody"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <div class="tab-pane fade" id="archiveTab">
-                    <div class="row g-4 mb-4">
-                        <div class="col-md-6"><div class="stat-card" style="border-left-color: #34495e;"><small class="text-muted">จำนวนรถรวมเดือนนี้</small><h4 id="arc-count-cars">0</h4></div></div>
-                        <div class="col-md-6"><div class="stat-card" style="border-left-color: #27ae60;"><small class="text-muted">รายได้รวมเดือนนี้</small><h4 class="text-success" id="arc-total-income">0 ฿</h4></div></div>
+                <div class="tab-pane fade" id="members">
+                    <div class="content-card">
+                        <div class="page-title">
+                            <span>ทะเบียนสมาชิกรายเดือน</span>
+                            <button onclick="openMemberModal('add')" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm action-col">เพิ่มใหม่</button>
+                        </div>
+                        <table id="memberTable" class="table table-bordered table-hover w-100">
+                            <thead><tr><th>ทะเบียน</th><th>ประเภท</th><th>เจ้าของ</th><th>ห้อง</th><th>โทรศัพท์</th><th>หมดอายุ</th><th>หมายเหตุ</th><th class="text-center action-col">จัดการ</th></tr></thead>
+                            <tbody id="memberBody"></tbody>
+                        </table>
                     </div>
+                </div>
+
+                <div class="tab-pane fade" id="queue">
+                    <div class="content-card">
+                        <div class="page-title">รายการจองคิวรออนุมัติ</div>
+                        <table id="queueTable" class="table table-hover w-100">
+                            <thead><tr><th class="text-center">ลำดับ</th><th>ทะเบียน</th><th>ผู้จอง</th><th>เบอร์โทร</th><th>ห้อง</th><th class="text-center action-col">ดำเนินการ</th></tr></thead>
+                            <tbody id="queueBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="archiveTab">
                     <div class="content-card">
                         <div class="page-title">
                             <span>ค้นหาประวัติการจอดรถ</span>
@@ -170,57 +145,29 @@
                                 <button onclick="loadArchive()" class="btn btn-primary btn-sm px-4 shadow-sm">ค้นหา</button>
                             </div>
                         </div>
-                        <div class="table-responsive">
-                            <table id="archiveTable" class="table table-hover w-100">
-                                <thead class="table-light"><tr><th>ทะเบียนรถ</th><th>ห้อง</th><th>ประเภท</th><th>เวลาเข้า</th><th>เวลาออก</th><th class="text-end pe-4">ค่าจอด</th></tr></thead>
-                                <tbody id="archiveBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tab-pane fade" id="members">
-                    <div class="content-card">
-                        <div class="page-title"><span>สมาชิกรายเดือน</span><button onclick="openMemberModal('add')" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm action-col">เพิ่มใหม่</button></div>
-                        <div class="table-responsive">
-                            <table id="memberTable" class="table table-bordered table-hover w-100">
-                                <thead><tr><th>ทะเบียนรถ</th><th>ประเภท</th><th>ชื่อเจ้าของ</th><th>ห้อง</th><th>โทรศัพท์</th><th>หมดอายุ</th><th>หมายเหตุ</th><th class="text-center no-print action-col">จัดการ</th></tr></thead>
-                                <tbody id="memberBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tab-pane fade" id="queue">
-                    <div class="content-card">
-                        <div class="page-title">รายการจองคิวรออนุมัติ</div>
-                        <div class="table-responsive">
-                            <table id="queueTable" class="table table-hover w-100">
-                                <thead><tr><th class="text-center">ลำดับ</th><th>ทะเบียนรถ</th><th>ชื่อผู้จอง</th><th>เบอร์โทร</th><th>ห้อง</th><th class="text-center action-col">การดำเนินการ</th></tr></thead>
-                                <tbody id="queueBody"></tbody>
-                            </table>
-                        </div>
+                        <table id="archiveTable" class="table table-hover w-100">
+                            <thead class="table-light"><tr><th>ทะเบียนรถ</th><th>ห้อง</th><th>ประเภท</th><th>เวลาเข้า</th><th>เวลาออก</th><th class="text-end pe-4">ค่าจอด</th></tr></thead>
+                            <tbody id="archiveBody"></tbody>
+                        </table>
                     </div>
                 </div>
 
                 <div class="tab-pane fade super-admin-section" id="users">
                     <div class="content-card">
                         <div class="page-title">จัดการผู้ใช้ระบบ <button onclick="openUserModal()" class="btn btn-primary btn-sm px-3 rounded-pill shadow-sm">เพิ่มผู้ใช้</button></div>
-                        <div class="table-responsive">
-                            <table class="table table-hover w-100">
-                                <thead class="table-light"><tr><th>Username</th><th>ชื่อ-สกุล</th><th>สิทธิ์</th><th class="text-center">สถานะ</th><th class="text-center">จัดการ</th></tr></thead>
-                                <tbody id="usersBody"></tbody>
-                            </table>
-                        </div>
+                        <table class="table table-hover w-100">
+                            <thead><tr><th>Username</th><th>ชื่อ-สกุล</th><th>สิทธิ์</th><th class="text-center">สถานะ</th><th class="text-center">จัดการ</th></tr></thead>
+                            <tbody id="usersBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal fade" id="memberModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header bg-light"><h5>ข้อมูลสมาชิก</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editOriginalPlate"><input type="hidden" id="fromQueuePlate"><form id="memberForm"><div class="mb-3"><label class="form-label small">ทะเบียนรถ *</label><input type="text" id="mPlate" class="form-control" required oninput="this.value = this.value.toUpperCase().replace(/\s+/g, '')"></div><div class="row mb-3"><div class="col-6"><label class="form-label small">ประเภท</label><select id="mType" class="form-select"><option value="รถยนต์">รถยนต์</option><option value="รถจักรยานยนต์">รถจักรยานยนต์</option></select></div><div class="col-6"><label class="form-label small">ห้อง</label><input type="text" id="mRoom" class="form-control"></div></div><div class="mb-3"><label class="small">เจ้าของ</label><input type="text" id="mName" class="form-control"></div><div class="mb-3"><label class="small">เบอร์โทร</label><input type="text" id="mPhone" class="form-control"></div><div class="mb-3"><label class="small">วันหมดอายุ *</label><input type="date" id="mExp" class="form-control" required></div></form></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button><button type="button" onclick="submitMember()" class="btn btn-primary px-4">บันทึก</button></div></div></div></div>
+    <div class="modal fade" id="memberModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header bg-light"><h5>ข้อมูลสมาชิก</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editOriginalPlate"><input type="hidden" id="fromQueuePlate"><form id="memberForm"><div class="mb-3"><label class="form-label small">ทะเบียนรถ *</label><input type="text" id="mPlate" class="form-control" required oninput="this.value = this.value.toUpperCase().replace(/\s+/g, '')"></div><div class="row mb-3"><div class="col-6"><label class="form-label small">ประเภท</label><select id="mType" class="form-select"><option value="รถยนต์">รถยนต์</option><option value="รถจักรยานยนต์">รถจักรยานยนต์</option></select></div><div class="col-6"><label class="form-label small">ห้อง</label><input type="text" id="mRoom" class="form-control"></div></div><div class="mb-3"><label class="small">เจ้าของ</label><input type="text" id="mName" class="form-control"></div><div class="mb-3"><label class="small">เบอร์โทร</label><input type="text" id="mPhone" class="form-control"></div><div class="mb-3"><label class="small">วันหมดอายุ *</label><input type="date" id="mExp" class="form-control" required></div></form></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button><button type="button" onclick="submitMember()" class="btn btn-primary px-4">บันทึกข้อมูล</button></div></div></div></div>
     <div class="modal fade" id="editRecordModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content"><div class="modal-header bg-light"><h5 class="modal-title small fw-bold">แก้ไข</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editRecId"><div class="mb-3"><label class="small">ทะเบียน</label><input type="text" id="editRecPlate" class="form-control"></div><div class="mb-3"><label class="small">บริการ</label><select id="editRecType" class="form-select"><option value="ฝากจอดรถ">ฝากจอดรถ</option><option value="รายเดือน">รายเดือน</option><option value="VIP">VIP</option></select></div></div><div class="modal-footer"><button onclick="submitEditRecord()" class="btn btn-primary w-100 btn-sm">บันทึก</button></div></div></div></div>
-    <div class="modal fade" id="userModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header bg-light"><h5>บัญชีผู้ใช้</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="userForm"><div class="mb-3"><label class="small">Username</label><input type="text" id="uUser" class="form-control"></div><div class="mb-3"><label class="small">Password</label><input type="text" id="uPass" class="form-control" value="Abc@1234"></div><div class="mb-3"><label class="small">ชื่อ-สกุล</label><input type="text" id="uName" class="form-control"></div><div class="row"><div class="col-6"><label class="small">สิทธิ์</label><select id="uRole" class="form-select"><option value="system_admin">system_admin</option><option value="admin">admin</option><option value="accounting">accounting</option><option value="staff_ac">staff_ac</option><option value="security">security</option></select></div><div class="col-6"><label class="small">สถานะ</label><select id="uStatus" class="form-select"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div></div></form></div><div class="modal-footer"><button onclick="submitUser()" class="btn btn-primary w-100">บันทึก</button></div></div></div></div>
+    <div class="modal fade" id="userModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header bg-light"><h5>บัญชีผู้ใช้</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="userForm"><div class="mb-3"><label class="small">Username</label><input type="text" id="uUser" class="form-control"></div><div class="mb-3"><label class="small">Password</label><input type="text" id="uPass" class="form-control" value="Abc@1234"></div><div class="mb-3"><label class="small">ชื่อ-สกุล</label><input type="text" id="uName" class="form-control"></div><div class="row"><div class="col-6"><label class="small">สิทธิ์</label><select id="uRole" class="form-select"><option value="system_admin">system_admin</option><option value="admin">admin</option><option value="accounting">accounting</option><option value="staff_ac">staff_ac</option></select></div><div class="col-6"><label class="small">สถานะ</label><select id="uStatus" class="form-select"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div></div></form></div><div class="modal-footer"><button onclick="submitUser()" class="btn btn-primary w-100">บันทึก</button></div></div></div></div>
     <div class="modal fade" id="changePassModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content"><div class="modal-header"><h6>เปลี่ยนรหัสผ่าน</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body py-2"><input type="password" id="cpOld" class="form-control mb-2" placeholder="รหัสเดิม"><input type="password" id="cpNew" class="form-control mb-2" placeholder="รหัสใหม่"><input type="password" id="cpConfirm" class="form-control" placeholder="ยืนยันรหัสใหม่"></div><div class="modal-footer border-0"><button onclick="submitChangePass()" class="btn btn-primary w-100 btn-sm">บันทึก</button></div></div></div></div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -232,13 +179,13 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwXmm75vM7CNvFyuPQKBE_0Bdc1uDzh13Anp2CnQcwxEdhGmKiBHA-YhXLP8a0GV42mUQ/exec"; 
         let CURRENT_ROLE = null; let CURRENT_USER_NAME = ""; let CURRENT_LOGIN_ID = ""; let isEditMode = false; let refreshInterval;
-        
+
         $(document).ready(function() { 
             $('#loginUser, #loginPass').val(''); 
             let today = new Date();
             $('#archiveMonth').val(today.getFullYear() + "-" + ("0" + (today.getMonth() + 1)).slice(-2));
         });
-        
+
         function gasRequest(action, payload, onSuccess) {
             fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action, payload }) })
             .then(async (res) => {
@@ -250,8 +197,6 @@
             .catch(err => { console.error(err); Swal.fire('Network Error', 'การเชื่อมต่อขัดข้อง', 'error'); });
         }
 
-        function goToHome() { window.top.location.href = "https://chaichana-dev-io.github.io/charoenkrung-condo3-admin/"; }
-        
         function doLogin() { 
             let u = $('#loginUser').val(); let p = $('#loginPass').val(); 
             let btn = $('#btnLogin'); btn.html('<span class="spinner-border spinner-border-sm"></span> Checking...').prop('disabled', true); 
@@ -273,13 +218,15 @@
         }
 
         function setupUIByRole() {
+            $('#mainBody').removeClass('staff-read-only');
             $('.super-admin-section').hide();
             $('#tab-queue-li').show();
             $('.action-col').show();
+            $('[style*="display: none !important"]').removeAttr('style');
             $('#staff-logic-css').remove();
 
             if (CURRENT_ROLE === 'staff_ac') {
-                $('#tab-queue-li').hide(); // 🚫 ซ่อนหน้าคิวรออนุมัติ
+                $('#tab-queue-li').hide(); 
                 $('<style id="staff-logic-css">.action-col { display: none !important; } .super-admin-section { display: none !important; }</style>').appendTo('head');
             } else if (CURRENT_ROLE === 'accounting') {
                 $('#tab-members, #tab-queue-li, #tab-users').hide();
@@ -301,7 +248,6 @@
                     let fee = parseFloat(r.fee) || 0; if (r.type !== 'รายเดือน' && r.type !== 'VIP') totalIncome += fee; if (r.exit === "" || r.exit === "-") currentParked++; 
                     let typeBadge = (r.type === 'รายเดือน') ? '<span class="badge bg-info bg-opacity-10 text-info border">รายเดือน</span>' : (r.type === 'VIP' ? '<span class="badge bg-warning text-dark">VIP</span>' : `<span class="badge bg-secondary">${r.type}</span>`);
                     
-                    // 🔒 ล็อกระดับโค้ด: staff_ac จะมองไม่เห็นปุ่ม
                     let actionBtns = (['system_admin', 'admin'].includes(CURRENT_ROLE)) ? 
                         `${(r.exit===""||r.exit==="-")?`<button onclick="confirmExit('${r.id}','${r.plate}')" class="btn btn-sm btn-danger px-2 py-0 shadow-sm"><i class="bi bi-box-arrow-right"></i></button>`:''}<button onclick="openEditRecordModal('${r.id}','${r.plate}','${r.type}')" class="btn btn-sm btn-light border ms-1 px-2 py-0 shadow-sm"><i class="bi bi-pencil"></i></button>` : '';
                     
@@ -309,6 +255,27 @@
                 }); 
                 $('#stat-total-cars').text(data.length.toLocaleString()); $('#stat-total-income').text(totalIncome.toLocaleString() + " ฿"); $('#stat-current-parked').text(currentParked.toLocaleString()); 
                 updateDataTable('#recordTable', '#recordBody', html);
+            });
+        }
+
+        function openEditRecordModal(id, plate, type) {
+            $('#editRecId').val(id);
+            $('#editRecPlate').val(plate);
+            $('#editRecType').val(type);
+            var myModal = new bootstrap.Modal(document.getElementById('editRecordModal'));
+            myModal.show();
+        }
+
+        function submitEditRecord() {
+            let id = $('#editRecId').val();
+            let plate = $('#editRecPlate').val().trim();
+            let type = $('#editRecType').val();
+            if(!plate) return Swal.fire('เตือน','กรุณากรอกทะเบียน','warning');
+            bootstrap.Modal.getInstance(document.getElementById('editRecordModal')).hide();
+            Swal.fire({title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading()});
+            gasRequest('updateRecord', { id: id, plate: plate, type: type, actorName: CURRENT_USER_NAME }, () => {
+                Swal.fire('สำเร็จ','แก้ไขข้อมูลเรียบร้อย','success');
+                loadDashboard();
             });
         }
 
@@ -329,8 +296,7 @@
                 data.forEach(r => { 
                     if (!r[0] || r[0].toString().trim() === "" || r[0] === "ทะเบียนรถ") return;
                     if (r[1] === 'รถยนต์') countCar++; else countMoto++;
-                    
-                    // 🔒 ล็อกสิทธิ์ปุ่มจัดการสมาชิก
+                    let rowData = encodeURIComponent(JSON.stringify(r));
                     let manageBtn = (['system_admin', 'admin'].includes(CURRENT_ROLE)) ? 
                         `<button onclick="renewMemberCheck('${r[0]}','${r[5]}')" class="btn btn-sm btn-outline-success me-1 px-2 py-0 shadow-sm"><i class="bi bi-arrow-repeat"></i></button><button onclick="openMemberModal('edit','${encodeURIComponent(JSON.stringify(r))}')" class="btn btn-sm btn-outline-primary me-1 px-2 py-0 shadow-sm"><i class="bi bi-pencil"></i></button><button onclick="delMember('${r[0]}')" class="btn btn-sm btn-outline-danger px-2 py-0 shadow-sm"><i class="bi bi-trash"></i></button>` : '';
 
@@ -353,22 +319,118 @@
             }); 
         }
 
-        function toggleStatus(u, s) { if(CURRENT_ROLE !== 'system_admin') return; gasRequest('updateUserStatus', { targetUser: u, newStatus: s, actorName: CURRENT_USER_NAME }, () => loadUsers()); }
+        // 🔄 อัปเดต: เพิ่มการยืนยันก่อนเปลี่ยนสถานะผู้ใช้
+        function toggleStatus(u, s) { 
+            if(CURRENT_ROLE !== 'system_admin') return; 
+            Swal.fire({
+                title: 'ยืนยันการเปลี่ยนสถานะ?',
+                text: `ต้องการเปลี่ยนสถานะของ ${u} เป็น ${s} หรือไม่?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'ใช่',
+                cancelButtonText: 'ยกเลิก'
+            }).then(r => {
+                if(r.isConfirmed) {
+                    gasRequest('updateUserStatus', { targetUser: u, newStatus: s, actorName: CURRENT_USER_NAME }, () => loadUsers());
+                }
+            });
+        }
+
         function loadQueue() { if (['staff_ac', 'accounting'].includes(CURRENT_ROLE)) return; gasRequest('getBookingList', {}, (d) => { $('#queueCount').text(d.length); let h = ''; d.forEach(r => { let deleteBtn = (['system_admin', 'admin'].includes(CURRENT_ROLE)) ? `<button onclick="rejectQueue('${r[2]}')" class="btn btn-sm btn-outline-danger ms-1 py-0 px-1 shadow-sm"><i class="bi bi-trash"></i></button>` : ''; h += `<tr><td class="text-center"><span class="badge bg-primary rounded-circle">${r[1]}</span></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="text-center no-print action-col"><button onclick="approveQueue('${encodeURIComponent(JSON.stringify(r))}')" class="btn btn-sm btn-success px-3 py-0 shadow-sm">อนุมัติ</button>${deleteBtn}</td></tr>`; }); $('#queueBody').html(h || '<tr><td colspan="6" class="text-center py-4">ไม่มีรายการ</td></tr>'); }); }
         function rejectQueue(p) { Swal.fire({ title: 'ลบคิว?', icon: 'error', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('deleteBooking', { plate: p, actorName: CURRENT_USER_NAME }, () => loadQueue()); }); }
         function confirmExit(id, plate) { Swal.fire({ title: 'รถออก?', text: plate, icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('forceExitCar', { id: id, actorName: CURRENT_USER_NAME }, () => loadDashboard()); }); }
         function updateDataTable(tId, bId, html) { if ($.fn.DataTable.isDataTable(tId)) $(tId).DataTable().destroy(); $(bId).html(html); $(tId).DataTable({ "language": { "search": "ค้นหาด่วน:" }, "order": [] }); }
         function resetFilter() { $('#filterDate').val(''); loadDashboard(); }
-        function doManualBackup() { gasRequest('createSystemBackup', { actorName: CURRENT_USER_NAME }, () => Swal.fire('Backup สำเร็จ','','success')); }
-        function doManualArchive() { gasRequest('archiveOldRecords', { actorName: CURRENT_USER_NAME }, (res) => { Swal.fire('สำเร็จ', res, 'success'); loadDashboard(); }); }
+        
+        function doManualBackup() { 
+            Swal.fire({
+                title: 'สำรองข้อมูลระบบ?',
+                text: "ระบบจะทำสำเนาไฟล์ปัจจุบันเก็บไว้ในโฟลเดอร์ Backup",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'ตกลง',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'กำลังสำรองข้อมูล...', didOpen: () => Swal.showLoading() });
+                    gasRequest('createSystemBackup', { actorName: CURRENT_USER_NAME }, (res) => {
+                        Swal.fire('สำเร็จ', res, 'success');
+                    });
+                }
+            });
+        }
+
+        function doManualArchive() { 
+            Swal.fire({
+                title: 'ย้ายข้อมูลเดือนเก่า?',
+                text: "รายการที่แจ้งออกแล้วและเป็นของเดือนก่อนหน้าจะถูกย้ายไปยังไฟล์ประวัติ",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'กำลังย้ายข้อมูล...', didOpen: () => Swal.showLoading() });
+                    gasRequest('archiveOldRecords', { actorName: CURRENT_USER_NAME }, (res) => {
+                        Swal.fire('สำเร็จ', res, 'success');
+                        loadDashboard();
+                    });
+                }
+            });
+        }
+
         function formatDateJS(s) { if(!s) return "-"; let d = new Date(s); return isNaN(d) ? s : d.toLocaleDateString('th-TH'); }
         function openMemberModal(m, d) { isEditMode=(m==='edit'); if(isEditMode){ let r=JSON.parse(decodeURIComponent(d)); $('#editOriginalPlate').val(r[0]); $('#mPlate').val(r[0]); $('#mType').val(r[1]); $('#mName').val(r[2]); $('#mRoom').val(r[3]); $('#mPhone').val(r[4]); $('#mExp').val(r[5]); } else { $('#memberForm')[0].reset(); } new bootstrap.Modal('#memberModal').show(); }
         function submitMember() { let action = isEditMode ? 'updateMember' : 'saveMember'; let p = isEditMode ? { oldPlate: $('#editOriginalPlate').val(), newData: [$('#mPlate').val(), $('#mType').val(), $('#mName').val(), $('#mRoom').val(), $('#mPhone').val(), $('#mExp').val()] } : { memberData: [$('#mPlate').val(), $('#mType').val(), $('#mName').val(), $('#mRoom').val(), $('#mPhone').val(), $('#mExp').val()] }; gasRequest(action, p, () => { Swal.fire('สำเร็จ','','success'); bootstrap.Modal.getInstance('#memberModal').hide(); loadMembers(); }); }
+        
+        function renewMemberCheck(plate, exp) {
+            let d = new Date(exp);
+            if (isNaN(d.getTime())) {
+                Swal.fire('Error', 'ไม่สามารถอ่านวันที่เดิมได้', 'error');
+                return;
+            }
+            let newDate = new Date(d.getFullYear(), d.getMonth() + 2, 0);
+            let newExpStr = newDate.toISOString().split('T')[0];
+            
+            Swal.fire({
+                title: 'ต่ออายุสมาชิก?',
+                text: `ทะเบียน: ${plate} ต่ออายุใหม่เป็น: ${newDate.toLocaleDateString('th-TH')}`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'ตกลง',
+                cancelButtonText: 'ยกเลิก'
+            }).then(r => {
+                if(r.isConfirmed) {
+                    Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
+                    gasRequest('renewMember', { plate: plate, date: newExpStr, actorName: CURRENT_USER_NAME }, () => {
+                        Swal.fire('สำเร็จ', 'ต่ออายุเรียบร้อยแล้ว', 'success');
+                        loadMembers();
+                    });
+                }
+            });
+        }
+
         function approveQueue(d) { let r = JSON.parse(decodeURIComponent(d)); openMemberModal('add'); $('#mPlate').val(r[2]); $('#mName').val(r[3]); $('#mPhone').val(r[4]); $('#mRoom').val(r[5]); $('#fromQueuePlate').val(r[2]); }
         function delMember(p) { Swal.fire({ title: 'ลบสมาชิก?', icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('deleteMember', { plate: p, actorName: CURRENT_USER_NAME }, () => loadMembers()); }); }
         function openUserModal() { $('#userForm')[0].reset(); new bootstrap.Modal('#userModal').show(); }
         function submitUser() { let u = [$('#uUser').val(), $('#uPass').val(), $('#uName').val(), $('#uRole').val(), $('#uStatus').val()]; gasRequest('saveUser', { userData: u, actorName: CURRENT_USER_NAME }, () => { bootstrap.Modal.getInstance('#userModal').hide(); loadUsers(); }); }
-        function resetPass(u) { Swal.fire({ title: 'Reset?', icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('resetUserPassword', { targetUser: u, actorName: CURRENT_USER_NAME }, () => Swal.fire('สำเร็จ','','success')); }); }
+        
+        // 🔄 อัปเดต: ปรับข้อความรีเซ็ตรหัสผ่านเป็น Abc@123
+        function resetPass(u) { 
+            Swal.fire({ 
+                title: 'รีเซ็ตรหัสผ่าน?', 
+                text: `ต้องการรีเซ็ตรหัสผ่านของ ${u} เป็น Abc@123 หรือเปล่า`, 
+                icon: 'warning', 
+                showCancelButton: true,
+                confirmButtonText: 'ใช่',
+                cancelButtonText: 'ยกเลิก'
+            }).then(r => { 
+                if(r.isConfirmed) {
+                    gasRequest('resetUserPassword', { targetUser: u, actorName: CURRENT_USER_NAME }, () => Swal.fire('สำเร็จ','รหัสผ่านถูกเปลี่ยนเป็น Abc@123 เรียบร้อยแล้ว','success')); 
+                }
+            }); 
+        }
+
         function openChangePassModal() { $('#cpOld, #cpNew, #cpConfirm').val(''); new bootstrap.Modal('#changePassModal').show(); }
         function submitChangePass() { 
             if($('#cpNew').val() !== $('#cpConfirm').val()) return Swal.fire('Error','รหัสใหม่ไม่ตรงกัน','error');
@@ -378,6 +440,7 @@
             });
         }
         function initArchiveTab() { }
+        function goToHome() { window.top.location.href = "https://chaichana-dev-io.github.io/charoenkrung-condo3-admin/"; }
     </script>
 </body>
 </html>
