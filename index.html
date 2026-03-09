@@ -52,7 +52,7 @@
                 <input type="text" id="loginUser" class="form-control mb-3 text-center py-2" placeholder="Username" required>
                 <input type="password" id="loginPass" class="form-control mb-4 text-center py-2" placeholder="Password" required>
                 <button type="submit" id="btnLogin" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">Login</button>
-                </form>
+            </form>
             <p id="loginError" class="text-danger mt-3 small" style="display:none;"><i class="bi bi-exclamation-circle-fill"></i> รหัสผ่านไม่ถูกต้อง</p>
         </div>
     </div>
@@ -136,6 +136,10 @@
                 </div>
 
                 <div class="tab-pane fade" id="archiveTab">
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6"><div class="stat-card" style="border-left-color: #34495e;"><small class="text-muted">จำนวนรถรวมเดือนนี้</small><h4 id="arc-count-cars">0</h4></div></div>
+                        <div class="col-md-6"><div class="stat-card" style="border-left-color: #27ae60;"><small class="text-muted">รายได้รวมเดือนนี้</small><h4 class="text-success" id="arc-total-income">0 ฿</h4></div></div>
+                    </div>
                     <div class="content-card">
                         <div class="page-title">
                             <span>ค้นหาประวัติการจอดรถ</span>
@@ -144,10 +148,14 @@
                                 <button onclick="loadArchive()" class="btn btn-primary btn-sm px-4 shadow-sm">ค้นหา</button>
                             </div>
                         </div>
-                        <table id="archiveTable" class="table table-hover w-100">
-                            <thead class="table-light"><tr><th>ทะเบียนรถ</th><th>ห้อง</th><th>ประเภท</th><th>เวลาเข้า</th><th>เวลาออก</th><th class="text-end pe-4">ค่าจอด</th></tr></thead>
-                            <tbody id="archiveBody"></tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table id="archiveTable" class="table table-hover w-100">
+                                <thead class="table-light"><tr><th>ทะเบียนรถ</th><th>ห้อง</th><th>ประเภท</th><th>เวลาเข้า</th><th>เวลาออก</th><th class="text-end pe-4">ค่าจอด</th></tr></thead>
+                                <tbody id="archiveBody">
+                                    <tr><td colspan="6" class="text-center py-4 text-muted">กรุณาเลือกเดือนและกดปุ่มค้นหาเพื่อดูประวัติ</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -229,7 +237,6 @@
                 $('<style id="staff-logic-css">.action-col { display: none !important; } .super-admin-section { display: none !important; }</style>').appendTo('head');
             } else if (CURRENT_ROLE === 'accounting') {
                 $('#tab-queue-li, #tab-users').hide();
-                // บัญชีเห็นแค่ "ต่ออายุ" และ "แก้ไข" (ซ่อนปุ่มลบและคอลัมน์จัดการอื่นๆ)
                 $('<style id="staff-logic-css">#dashboard .action-col, #queue .action-col, #members .page-title .action-col { display: none !important; }</style>').appendTo('head');
             }
 
@@ -310,6 +317,41 @@
         function updateDataTable(tId, bId, html) { if ($.fn.DataTable.isDataTable(tId)) $(tId).DataTable().destroy(); $(bId).html(html); $(tId).DataTable({ "language": { "search": "ค้นหาด่วน:" }, "order": [] }); }
         function formatDateJS(s) { if(!s) return "-"; let d = new Date(s); return isNaN(d) ? s : d.toLocaleDateString('th-TH'); }
         function resetFilter() { $('#filterDate').val(''); loadDashboard(); }
+        
+        // --- 📜 ส่วนประวัติย้อนหลัง: ไม่โหลดตอนเปิดแท็บ รอให้ผู้ใช้กดปุ่มค้นหา ---
+        function initArchiveTab() {
+            // ปล่อยว่างไว้ เพื่อไม่ให้โหลดข้อมูลอัตโนมัติ
+        }
+
+        function loadArchive() { 
+            let m = $('#archiveMonth').val(); 
+            if(!m) return Swal.fire('เตือน', 'กรุณาเลือกเดือน', 'warning'); 
+            
+            $('#archiveBody').html('<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> กำลังดึงข้อมูล...</td></tr>'); 
+            
+            gasRequest('getArchiveData', { monthValue: m }, function(data) { 
+                let html = ''; 
+                let totalArchiveIncome = 0;
+                let carCount = data.length;
+
+                if(data.length === 0) {
+                    html = '<tr><td colspan="6" class="text-center py-4 text-muted">ไม่พบข้อมูลในเดือนที่เลือก</td></tr>';
+                } else {
+                    data.forEach(r => { 
+                        let fee = parseFloat(r.fee) || 0; 
+                        totalArchiveIncome += fee;
+                        html += `<tr><td class="fw-bold">${r.plate}</td><td>${r.room}</td><td>${r.type}</td><td>${r.entry}</td><td>${r.exit}</td><td class="text-end fw-bold">${fee.toLocaleString()}</td></tr>`; 
+                    }); 
+                }
+
+                // Update Stat Cards
+                $('#arc-count-cars').text(carCount.toLocaleString());
+                $('#arc-total-income').text(totalArchiveIncome.toLocaleString() + " ฿");
+
+                updateDataTable('#archiveTable', '#archiveBody', html); 
+            }); 
+        }
+
         function openMemberModal(m, d) { isEditMode=(m==='edit'); if(isEditMode){ let r=JSON.parse(decodeURIComponent(d)); $('#editOriginalPlate').val(r[0]); $('#mPlate').val(r[0]); $('#mType').val(r[1]); $('#mName').val(r[2]); $('#mRoom').val(r[3]); $('#mPhone').val(r[4]); $('#mExp').val(r[5]); } else { $('#memberForm')[0].reset(); } new bootstrap.Modal('#memberModal').show(); }
         function submitMember() { let action = isEditMode ? 'updateMember' : 'saveMember'; let p = isEditMode ? { oldPlate: $('#editOriginalPlate').val(), newData: [$('#mPlate').val(), $('#mType').val(), $('#mName').val(), $('#mRoom').val(), $('#mPhone').val(), $('#mExp').val()] } : { memberData: [$('#mPlate').val(), $('#mType').val(), $('#mName').val(), $('#mRoom').val(), $('#mPhone').val(), $('#mExp').val()] }; gasRequest(action, p, () => { Swal.fire('สำเร็จ','บันทึกเรียบร้อย','success'); bootstrap.Modal.getInstance('#memberModal').hide(); loadMembers(); }); }
         function delMember(p) { Swal.fire({ title: 'ลบสมาชิก?', icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('deleteMember', { plate: p, actorName: CURRENT_USER_NAME }, () => loadMembers()); }); }
@@ -317,7 +359,6 @@
         function submitChangePass() { if($('#cpNew').val() !== $('#cpConfirm').val()) return Swal.fire('Error','รหัสใหม่ไม่ตรงกัน','error'); gasRequest('changeUserPassword', { username: CURRENT_LOGIN_ID, oldPass: $('#cpOld').val(), newPass: $('#cpNew').val() }, (res) => { if(res === 'Success') { Swal.fire('สำเร็จ','เปลี่ยนรหัสผ่านแล้ว','success'); bootstrap.Modal.getInstance('#changePassModal').hide(); } else Swal.fire('ผิดพลาด','รหัสเดิมไม่ถูกต้อง','error'); }); }
         function openEditRecordModal(id, plate, type) { $('#editRecId').val(id); $('#editRecPlate').val(plate); $('#editRecType').val(type); new bootstrap.Modal('#editRecordModal').show(); }
         function submitEditRecord() { let id = $('#editRecId').val(); let plate = $('#editRecPlate').val().trim(); let type = $('#editRecType').val(); if(!plate) return Swal.fire('เตือน','กรุณากรอกทะเบียน','warning'); bootstrap.Modal.getInstance('#editRecordModal').hide(); Swal.fire({title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading()}); gasRequest('updateRecord', { id: id, plate: plate, type: type, actorName: CURRENT_USER_NAME }, () => { Swal.fire('สำเร็จ','แก้ไขเรียบร้อย','success'); loadDashboard(); }); }
-        function loadArchive() { let m = $('#archiveMonth').val(); if(!m) return Swal.fire('เตือน', 'กรุณาเลือกเดือน', 'warning'); $('#archiveBody').html('<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> กำลังดึงข้อมูล...</td></tr>'); gasRequest('getArchiveData', { monthValue: m }, function(data) { let html = ''; data.forEach(r => { let fee = parseFloat(r.fee) || 0; html += `<tr><td class="fw-bold">${r.plate}</td><td>${r.room}</td><td>${r.type}</td><td>${r.entry}</td><td>${r.exit}</td><td class="text-end fw-bold">${fee.toLocaleString()}</td></tr>`; }); updateDataTable('#archiveTable', '#archiveBody', html); }); }
         function loadUsers() { if (CURRENT_ROLE !== 'system_admin') return; gasRequest('getUsers', {}, function(data) { let html = ''; data.forEach(u => { let isActive = (u[4] === 'Active'); let rBadge = (u[3] === 'system_admin') ? 'bg-danger' : (u[3] === 'admin' ? 'bg-primary' : (u[3] === 'accounting' ? 'bg-success' : 'bg-secondary')); html += `<tr><td>${u[0]}</td><td>${u[2]}</td><td><span class="badge ${rBadge}">${u[3]}</span></td><td class="text-center"><span class="badge ${isActive?'bg-success':'bg-secondary'} badge-status shadow-sm" onclick="toggleStatus('${u[0]}','${isActive?'Inactive':'Active'}')">${u[4]}</span></td><td class="text-center"><button onclick="resetPass('${u[0]}')" class="btn btn-sm btn-outline-warning shadow-sm"><i class="bi bi-key-fill"></i></button></td></tr>`; }); $('#usersBody').html(html); }); }
         function toggleStatus(u, s) { if(CURRENT_ROLE !== 'system_admin') return; Swal.fire({ title: 'ยืนยันการเปลี่ยนสถานะ?', icon: 'question', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('updateUserStatus', { targetUser: u, newStatus: s, actorName: CURRENT_USER_NAME }, () => loadUsers()); }); }
         function resetPass(u) { Swal.fire({ title: 'รีเซ็ตรหัสผ่าน?', text: `เปลี่ยนเป็น Abc@123 หรือไม่`, icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('resetUserPassword', { targetUser: u, actorName: CURRENT_USER_NAME }, () => Swal.fire('สำเร็จ','เปลี่ยนรหัสผ่านแล้ว','success')); }); }
