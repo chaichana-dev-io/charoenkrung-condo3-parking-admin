@@ -52,8 +52,7 @@
                 <input type="text" id="loginUser" class="form-control mb-3 text-center py-2" placeholder="Username" required>
                 <input type="password" id="loginPass" class="form-control mb-4 text-center py-2" placeholder="Password" required>
                 <button type="submit" id="btnLogin" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">Login</button>
-                <button type="button" onclick="goToHome()" class="btn btn-link text-muted text-decoration-none small mt-2">กลับหน้าหลัก</button>
-            </form>
+                </form>
             <p id="loginError" class="text-danger mt-3 small" style="display:none;"><i class="bi bi-exclamation-circle-fill"></i> รหัสผ่านไม่ถูกต้อง</p>
         </div>
     </div>
@@ -229,8 +228,9 @@
                 $('#tab-queue-li').hide(); 
                 $('<style id="staff-logic-css">.action-col { display: none !important; } .super-admin-section { display: none !important; }</style>').appendTo('head');
             } else if (CURRENT_ROLE === 'accounting') {
-                $('#tab-members, #tab-queue-li, #tab-users').hide();
-                $('<style id="staff-logic-css">.action-col { display: none !important; }</style>').appendTo('head');
+                $('#tab-queue-li, #tab-users').hide();
+                // บัญชีเห็นแค่ "ต่ออายุ" และ "แก้ไข" (ซ่อนปุ่มลบและคอลัมน์จัดการอื่นๆ)
+                $('<style id="staff-logic-css">#dashboard .action-col, #queue .action-col, #members .page-title .action-col { display: none !important; }</style>').appendTo('head');
             }
 
             if (CURRENT_ROLE === 'system_admin') {
@@ -258,47 +258,19 @@
             });
         }
 
-        function openEditRecordModal(id, plate, type) {
-            $('#editRecId').val(id);
-            $('#editRecPlate').val(plate);
-            $('#editRecType').val(type);
-            var myModal = new bootstrap.Modal(document.getElementById('editRecordModal'));
-            myModal.show();
-        }
-
-        function submitEditRecord() {
-            let id = $('#editRecId').val();
-            let plate = $('#editRecPlate').val().trim();
-            let type = $('#editRecType').val();
-            if(!plate) return Swal.fire('เตือน','กรุณากรอกทะเบียน','warning');
-            bootstrap.Modal.getInstance(document.getElementById('editRecordModal')).hide();
-            Swal.fire({title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading()});
-            gasRequest('updateRecord', { id: id, plate: plate, type: type, actorName: CURRENT_USER_NAME }, () => {
-                Swal.fire('สำเร็จ','แก้ไขข้อมูลเรียบร้อย','success');
-                loadDashboard();
-            });
-        }
-
-        function loadArchive() {
-            let m = $('#archiveMonth').val(); if(!m) return Swal.fire('เตือน', 'กรุณาเลือกเดือน', 'warning');
-            $('#archiveBody').html('<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> กำลังดึงข้อมูล...</td></tr>');
-            gasRequest('getArchiveData', { monthValue: m }, function(data) {
-                let html = ''; let total = 0;
-                data.forEach(r => { let fee = parseFloat(r.fee) || 0; total += fee; html += `<tr><td class="fw-bold">${r.plate}</td><td>${r.room}</td><td>${r.type}</td><td>${r.entry}</td><td>${r.exit}</td><td class="text-end fw-bold">${fee.toLocaleString()}</td></tr>`; });
-                $('#arc-count-cars').text(data.length.toLocaleString() + " คัน"); $('#arc-total-income').text(total.toLocaleString() + " ฿");
-                updateDataTable('#archiveTable', '#archiveBody', html);
-            });
-        }
-
         function loadMembers() { 
             gasRequest('getMembers', {}, function(data) { 
-                let html = '', countCar = 0, countMoto = 0, today = new Date().setHours(0,0,0,0);
+                let html = '', today = new Date().setHours(0,0,0,0);
                 data.forEach(r => { 
                     if (!r[0] || r[0].toString().trim() === "" || r[0] === "ทะเบียนรถ") return;
-                    if (r[1] === 'รถยนต์') countCar++; else countMoto++;
                     let rowData = encodeURIComponent(JSON.stringify(r));
-                    let manageBtn = (['system_admin', 'admin'].includes(CURRENT_ROLE)) ? 
-                        `<button onclick="renewMemberCheck('${r[0]}','${r[5]}')" class="btn btn-sm btn-outline-success me-1 px-2 py-0 shadow-sm"><i class="bi bi-arrow-repeat"></i></button><button onclick="openMemberModal('edit','${encodeURIComponent(JSON.stringify(r))}')" class="btn btn-sm btn-outline-primary me-1 px-2 py-0 shadow-sm"><i class="bi bi-pencil"></i></button><button onclick="delMember('${r[0]}')" class="btn btn-sm btn-outline-danger px-2 py-0 shadow-sm"><i class="bi bi-trash"></i></button>` : '';
+                    let manageBtn = '';
+
+                    if (['system_admin', 'admin'].includes(CURRENT_ROLE)) {
+                        manageBtn = `<button onclick="renewMemberCheck('${r[0]}','${r[5]}')" class="btn btn-sm btn-outline-success me-1 px-2 py-0 shadow-sm"><i class="bi bi-arrow-repeat"></i></button><button onclick="openMemberModal('edit','${rowData}')" class="btn btn-sm btn-outline-primary me-1 px-2 py-0 shadow-sm"><i class="bi bi-pencil"></i></button><button onclick="delMember('${r[0]}')" class="btn btn-sm btn-outline-danger px-2 py-0 shadow-sm"><i class="bi bi-trash"></i></button>`;
+                    } else if (CURRENT_ROLE === 'accounting') {
+                        manageBtn = `<button onclick="renewMemberCheck('${r[0]}','${r[5]}')" class="btn btn-sm btn-outline-success me-1 px-2 py-0 shadow-sm"><i class="bi bi-arrow-repeat"></i></button><button onclick="openMemberModal('edit','${rowData}')" class="btn btn-sm btn-outline-primary me-1 px-2 py-0 shadow-sm"><i class="bi bi-pencil"></i></button>`;
+                    }
 
                     html += `<tr class="${new Date(r[5]) < today ? 'table-danger' : ''}"><td class="fw-bold">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${formatDateJS(r[5])}</td><td>${r[6]||'-'}</td><td class="text-center no-print action-col">${manageBtn}</td></tr>`; 
                 }); 
@@ -306,91 +278,14 @@
             }); 
         }
 
-        function loadUsers() { 
-            if (CURRENT_ROLE !== 'system_admin') return; 
-            gasRequest('getUsers', {}, function(data) { 
-                let html = ''; 
-                data.forEach(u => { 
-                    let isActive = (u[4] === 'Active');
-                    let rBadge = (u[3] === 'system_admin') ? 'bg-danger' : (u[3] === 'admin' ? 'bg-primary' : (u[3] === 'accounting' ? 'bg-success' : 'bg-secondary'));
-                    html += `<tr><td>${u[0]}</td><td>${u[2]}</td><td><span class="badge ${rBadge}">${u[3]}</span></td><td class="text-center"><span class="badge ${isActive?'bg-success':'bg-secondary'} badge-status shadow-sm" onclick="toggleStatus('${u[0]}','${isActive?'Inactive':'Active'}')">${u[4]}</span></td><td class="text-center"><button onclick="resetPass('${u[0]}')" class="btn btn-sm btn-outline-warning shadow-sm"><i class="bi bi-key-fill"></i></button></td></tr>`; 
-                }); 
-                $('#usersBody').html(html); 
-            }); 
-        }
-
-        // 🔄 อัปเดต: เพิ่มการยืนยันก่อนเปลี่ยนสถานะผู้ใช้
-        function toggleStatus(u, s) { 
-            if(CURRENT_ROLE !== 'system_admin') return; 
-            Swal.fire({
-                title: 'ยืนยันการเปลี่ยนสถานะ?',
-                text: `ต้องการเปลี่ยนสถานะของ ${u} เป็น ${s} หรือไม่?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'ใช่',
-                cancelButtonText: 'ยกเลิก'
-            }).then(r => {
-                if(r.isConfirmed) {
-                    gasRequest('updateUserStatus', { targetUser: u, newStatus: s, actorName: CURRENT_USER_NAME }, () => loadUsers());
-                }
-            });
-        }
-
-        function loadQueue() { if (['staff_ac', 'accounting'].includes(CURRENT_ROLE)) return; gasRequest('getBookingList', {}, (d) => { $('#queueCount').text(d.length); let h = ''; d.forEach(r => { let deleteBtn = (['system_admin', 'admin'].includes(CURRENT_ROLE)) ? `<button onclick="rejectQueue('${r[2]}')" class="btn btn-sm btn-outline-danger ms-1 py-0 px-1 shadow-sm"><i class="bi bi-trash"></i></button>` : ''; h += `<tr><td class="text-center"><span class="badge bg-primary rounded-circle">${r[1]}</span></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="text-center no-print action-col"><button onclick="approveQueue('${encodeURIComponent(JSON.stringify(r))}')" class="btn btn-sm btn-success px-3 py-0 shadow-sm">อนุมัติ</button>${deleteBtn}</td></tr>`; }); $('#queueBody').html(h || '<tr><td colspan="6" class="text-center py-4">ไม่มีรายการ</td></tr>'); }); }
-        function rejectQueue(p) { Swal.fire({ title: 'ลบคิว?', icon: 'error', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('deleteBooking', { plate: p, actorName: CURRENT_USER_NAME }, () => loadQueue()); }); }
-        function confirmExit(id, plate) { Swal.fire({ title: 'รถออก?', text: plate, icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('forceExitCar', { id: id, actorName: CURRENT_USER_NAME }, () => loadDashboard()); }); }
-        function updateDataTable(tId, bId, html) { if ($.fn.DataTable.isDataTable(tId)) $(tId).DataTable().destroy(); $(bId).html(html); $(tId).DataTable({ "language": { "search": "ค้นหาด่วน:" }, "order": [] }); }
-        function resetFilter() { $('#filterDate').val(''); loadDashboard(); }
-        
-        function doManualBackup() { 
-            Swal.fire({
-                title: 'สำรองข้อมูลระบบ?',
-                text: "ระบบจะทำสำเนาไฟล์ปัจจุบันเก็บไว้ในโฟลเดอร์ Backup",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'ตกลง',
-                cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({ title: 'กำลังสำรองข้อมูล...', didOpen: () => Swal.showLoading() });
-                    gasRequest('createSystemBackup', { actorName: CURRENT_USER_NAME }, (res) => {
-                        Swal.fire('สำเร็จ', res, 'success');
-                    });
-                }
-            });
-        }
-
-        function doManualArchive() { 
-            Swal.fire({
-                title: 'ย้ายข้อมูลเดือนเก่า?',
-                text: "รายการที่แจ้งออกแล้วและเป็นของเดือนก่อนหน้าจะถูกย้ายไปยังไฟล์ประวัติ",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'ยืนยัน',
-                cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({ title: 'กำลังย้ายข้อมูล...', didOpen: () => Swal.showLoading() });
-                    gasRequest('archiveOldRecords', { actorName: CURRENT_USER_NAME }, (res) => {
-                        Swal.fire('สำเร็จ', res, 'success');
-                        loadDashboard();
-                    });
-                }
-            });
-        }
-
-        function formatDateJS(s) { if(!s) return "-"; let d = new Date(s); return isNaN(d) ? s : d.toLocaleDateString('th-TH'); }
-        function openMemberModal(m, d) { isEditMode=(m==='edit'); if(isEditMode){ let r=JSON.parse(decodeURIComponent(d)); $('#editOriginalPlate').val(r[0]); $('#mPlate').val(r[0]); $('#mType').val(r[1]); $('#mName').val(r[2]); $('#mRoom').val(r[3]); $('#mPhone').val(r[4]); $('#mExp').val(r[5]); } else { $('#memberForm')[0].reset(); } new bootstrap.Modal('#memberModal').show(); }
-        function submitMember() { let action = isEditMode ? 'updateMember' : 'saveMember'; let p = isEditMode ? { oldPlate: $('#editOriginalPlate').val(), newData: [$('#mPlate').val(), $('#mType').val(), $('#mName').val(), $('#mRoom').val(), $('#mPhone').val(), $('#mExp').val()] } : { memberData: [$('#mPlate').val(), $('#mType').val(), $('#mName').val(), $('#mRoom').val(), $('#mPhone').val(), $('#mExp').val()] }; gasRequest(action, p, () => { Swal.fire('สำเร็จ','','success'); bootstrap.Modal.getInstance('#memberModal').hide(); loadMembers(); }); }
-        
         function renewMemberCheck(plate, exp) {
             let d = new Date(exp);
-            if (isNaN(d.getTime())) {
-                Swal.fire('Error', 'ไม่สามารถอ่านวันที่เดิมได้', 'error');
-                return;
-            }
+            if (isNaN(d.getTime())) { Swal.fire('Error', 'ไม่สามารถอ่านวันที่เดิมได้', 'error'); return; }
             let newDate = new Date(d.getFullYear(), d.getMonth() + 2, 0);
-            let newExpStr = newDate.toISOString().split('T')[0];
+            let yyyy = newDate.getFullYear();
+            let mm = String(newDate.getMonth() + 1).padStart(2, '0');
+            let dd = String(newDate.getDate()).padStart(2, '0');
+            let newExpStr = `${yyyy}-${mm}-${dd}`;
             
             Swal.fire({
                 title: 'ต่ออายุสมาชิก?',
@@ -410,37 +305,26 @@
             });
         }
 
-        function approveQueue(d) { let r = JSON.parse(decodeURIComponent(d)); openMemberModal('add'); $('#mPlate').val(r[2]); $('#mName').val(r[3]); $('#mPhone').val(r[4]); $('#mRoom').val(r[5]); $('#fromQueuePlate').val(r[2]); }
-        function delMember(p) { Swal.fire({ title: 'ลบสมาชิก?', icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('deleteMember', { plate: p, actorName: CURRENT_USER_NAME }, () => loadMembers()); }); }
-        function openUserModal() { $('#userForm')[0].reset(); new bootstrap.Modal('#userModal').show(); }
-        function submitUser() { let u = [$('#uUser').val(), $('#uPass').val(), $('#uName').val(), $('#uRole').val(), $('#uStatus').val()]; gasRequest('saveUser', { userData: u, actorName: CURRENT_USER_NAME }, () => { bootstrap.Modal.getInstance('#userModal').hide(); loadUsers(); }); }
+        function loadQueue() { if (['staff_ac', 'accounting'].includes(CURRENT_ROLE)) return; gasRequest('getBookingList', {}, (d) => { $('#queueCount').text(d.length); let h = ''; d.forEach(r => { let deleteBtn = (['system_admin', 'admin'].includes(CURRENT_ROLE)) ? `<button onclick="rejectQueue('${r[2]}')" class="btn btn-sm btn-outline-danger ms-1 py-0 px-1 shadow-sm"><i class="bi bi-trash"></i></button>` : ''; h += `<tr><td class="text-center"><span class="badge bg-primary rounded-circle">${r[1]}</span></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="text-center no-print action-col"><button onclick="approveQueue('${encodeURIComponent(JSON.stringify(r))}')" class="btn btn-sm btn-success px-3 py-0 shadow-sm">อนุมัติ</button>${deleteBtn}</td></tr>`; }); $('#queueBody').html(h || '<tr><td colspan="6" class="text-center py-4">ไม่มีรายการ</td></tr>'); }); }
         
-        // 🔄 อัปเดต: ปรับข้อความรีเซ็ตรหัสผ่านเป็น Abc@123
-        function resetPass(u) { 
-            Swal.fire({ 
-                title: 'รีเซ็ตรหัสผ่าน?', 
-                text: `ต้องการรีเซ็ตรหัสผ่านของ ${u} เป็น Abc@123 หรือเปล่า`, 
-                icon: 'warning', 
-                showCancelButton: true,
-                confirmButtonText: 'ใช่',
-                cancelButtonText: 'ยกเลิก'
-            }).then(r => { 
-                if(r.isConfirmed) {
-                    gasRequest('resetUserPassword', { targetUser: u, actorName: CURRENT_USER_NAME }, () => Swal.fire('สำเร็จ','รหัสผ่านถูกเปลี่ยนเป็น Abc@123 เรียบร้อยแล้ว','success')); 
-                }
-            }); 
-        }
-
+        function updateDataTable(tId, bId, html) { if ($.fn.DataTable.isDataTable(tId)) $(tId).DataTable().destroy(); $(bId).html(html); $(tId).DataTable({ "language": { "search": "ค้นหาด่วน:" }, "order": [] }); }
+        function formatDateJS(s) { if(!s) return "-"; let d = new Date(s); return isNaN(d) ? s : d.toLocaleDateString('th-TH'); }
+        function resetFilter() { $('#filterDate').val(''); loadDashboard(); }
+        function openMemberModal(m, d) { isEditMode=(m==='edit'); if(isEditMode){ let r=JSON.parse(decodeURIComponent(d)); $('#editOriginalPlate').val(r[0]); $('#mPlate').val(r[0]); $('#mType').val(r[1]); $('#mName').val(r[2]); $('#mRoom').val(r[3]); $('#mPhone').val(r[4]); $('#mExp').val(r[5]); } else { $('#memberForm')[0].reset(); } new bootstrap.Modal('#memberModal').show(); }
+        function submitMember() { let action = isEditMode ? 'updateMember' : 'saveMember'; let p = isEditMode ? { oldPlate: $('#editOriginalPlate').val(), newData: [$('#mPlate').val(), $('#mType').val(), $('#mName').val(), $('#mRoom').val(), $('#mPhone').val(), $('#mExp').val()] } : { memberData: [$('#mPlate').val(), $('#mType').val(), $('#mName').val(), $('#mRoom').val(), $('#mPhone').val(), $('#mExp').val()] }; gasRequest(action, p, () => { Swal.fire('สำเร็จ','บันทึกเรียบร้อย','success'); bootstrap.Modal.getInstance('#memberModal').hide(); loadMembers(); }); }
+        function delMember(p) { Swal.fire({ title: 'ลบสมาชิก?', icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('deleteMember', { plate: p, actorName: CURRENT_USER_NAME }, () => loadMembers()); }); }
         function openChangePassModal() { $('#cpOld, #cpNew, #cpConfirm').val(''); new bootstrap.Modal('#changePassModal').show(); }
-        function submitChangePass() { 
-            if($('#cpNew').val() !== $('#cpConfirm').val()) return Swal.fire('Error','รหัสใหม่ไม่ตรงกัน','error');
-            gasRequest('changeUserPassword', { username: CURRENT_LOGIN_ID, oldPass: $('#cpOld').val(), newPass: $('#cpNew').val() }, (res) => {
-                if(res === 'Success') { Swal.fire('สำเร็จ','เปลี่ยนรหัสผ่านแล้ว','success'); bootstrap.Modal.getInstance('#changePassModal').hide(); }
-                else Swal.fire('ผิดพลาด','รหัสเดิมไม่ถูกต้อง','error');
-            });
-        }
-        function initArchiveTab() { }
-        function goToHome() { window.top.location.href = "https://chaichana-dev-io.github.io/charoenkrung-condo3-admin/"; }
+        function submitChangePass() { if($('#cpNew').val() !== $('#cpConfirm').val()) return Swal.fire('Error','รหัสใหม่ไม่ตรงกัน','error'); gasRequest('changeUserPassword', { username: CURRENT_LOGIN_ID, oldPass: $('#cpOld').val(), newPass: $('#cpNew').val() }, (res) => { if(res === 'Success') { Swal.fire('สำเร็จ','เปลี่ยนรหัสผ่านแล้ว','success'); bootstrap.Modal.getInstance('#changePassModal').hide(); } else Swal.fire('ผิดพลาด','รหัสเดิมไม่ถูกต้อง','error'); }); }
+        function openEditRecordModal(id, plate, type) { $('#editRecId').val(id); $('#editRecPlate').val(plate); $('#editRecType').val(type); new bootstrap.Modal('#editRecordModal').show(); }
+        function submitEditRecord() { let id = $('#editRecId').val(); let plate = $('#editRecPlate').val().trim(); let type = $('#editRecType').val(); if(!plate) return Swal.fire('เตือน','กรุณากรอกทะเบียน','warning'); bootstrap.Modal.getInstance('#editRecordModal').hide(); Swal.fire({title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading()}); gasRequest('updateRecord', { id: id, plate: plate, type: type, actorName: CURRENT_USER_NAME }, () => { Swal.fire('สำเร็จ','แก้ไขเรียบร้อย','success'); loadDashboard(); }); }
+        function loadArchive() { let m = $('#archiveMonth').val(); if(!m) return Swal.fire('เตือน', 'กรุณาเลือกเดือน', 'warning'); $('#archiveBody').html('<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> กำลังดึงข้อมูล...</td></tr>'); gasRequest('getArchiveData', { monthValue: m }, function(data) { let html = ''; data.forEach(r => { let fee = parseFloat(r.fee) || 0; html += `<tr><td class="fw-bold">${r.plate}</td><td>${r.room}</td><td>${r.type}</td><td>${r.entry}</td><td>${r.exit}</td><td class="text-end fw-bold">${fee.toLocaleString()}</td></tr>`; }); updateDataTable('#archiveTable', '#archiveBody', html); }); }
+        function loadUsers() { if (CURRENT_ROLE !== 'system_admin') return; gasRequest('getUsers', {}, function(data) { let html = ''; data.forEach(u => { let isActive = (u[4] === 'Active'); let rBadge = (u[3] === 'system_admin') ? 'bg-danger' : (u[3] === 'admin' ? 'bg-primary' : (u[3] === 'accounting' ? 'bg-success' : 'bg-secondary')); html += `<tr><td>${u[0]}</td><td>${u[2]}</td><td><span class="badge ${rBadge}">${u[3]}</span></td><td class="text-center"><span class="badge ${isActive?'bg-success':'bg-secondary'} badge-status shadow-sm" onclick="toggleStatus('${u[0]}','${isActive?'Inactive':'Active'}')">${u[4]}</span></td><td class="text-center"><button onclick="resetPass('${u[0]}')" class="btn btn-sm btn-outline-warning shadow-sm"><i class="bi bi-key-fill"></i></button></td></tr>`; }); $('#usersBody').html(html); }); }
+        function toggleStatus(u, s) { if(CURRENT_ROLE !== 'system_admin') return; Swal.fire({ title: 'ยืนยันการเปลี่ยนสถานะ?', icon: 'question', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('updateUserStatus', { targetUser: u, newStatus: s, actorName: CURRENT_USER_NAME }, () => loadUsers()); }); }
+        function resetPass(u) { Swal.fire({ title: 'รีเซ็ตรหัสผ่าน?', text: `เปลี่ยนเป็น Abc@123 หรือไม่`, icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('resetUserPassword', { targetUser: u, actorName: CURRENT_USER_NAME }, () => Swal.fire('สำเร็จ','เปลี่ยนรหัสผ่านแล้ว','success')); }); }
+        function doManualBackup() { Swal.fire({ title: 'สำรองข้อมูลระบบ?', icon: 'question', showCancelButton: true }).then((result) => { if (result.isConfirmed) { Swal.fire({ title: 'กำลังสำรองข้อมูล...', didOpen: () => Swal.showLoading() }); gasRequest('createSystemBackup', { actorName: CURRENT_USER_NAME }, (res) => { Swal.fire('สำเร็จ', res, 'success'); }); } }); }
+        function doManualArchive() { Swal.fire({ title: 'ย้ายข้อมูลเดือนเก่า?', icon: 'warning', showCancelButton: true }).then((result) => { if (result.isConfirmed) { Swal.fire({ title: 'กำลังย้ายข้อมูล...', didOpen: () => Swal.showLoading() }); gasRequest('archiveOldRecords', { actorName: CURRENT_USER_NAME }, (res) => { Swal.fire('สำเร็จ', res, 'success'); loadDashboard(); }); } }); }
+        function confirmExit(id, plate) { Swal.fire({ title: 'รถออก?', text: plate, icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) gasRequest('forceExitCar', { id: id, actorName: CURRENT_USER_NAME }, () => loadDashboard()); }); }
+        function approveQueue(d) { let r = JSON.parse(decodeURIComponent(d)); openMemberModal('add'); $('#mPlate').val(r[2]); $('#mName').val(r[3]); $('#mPhone').val(r[4]); $('#mRoom').val(r[5]); $('#fromQueuePlate').val(r[2]); }
     </script>
 </body>
 </html>
